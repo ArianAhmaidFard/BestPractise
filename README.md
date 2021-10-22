@@ -14,6 +14,8 @@ The technologies I have used in this project
 5-Dagger Hilt
 
 6-View Binding
+
+7-Swipe refresh layout
  
 more details:
 
