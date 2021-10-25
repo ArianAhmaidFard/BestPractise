@@ -9,6 +9,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.View;
 
 import com.arianahmadifard.task.R;
@@ -29,28 +32,35 @@ import io.reactivex.rxjava3.processors.PublishProcessor;
 @AndroidEntryPoint
 public class MainActivity extends AppCompatActivity {
     ActivityMainBinding binding;
-    MainViewModel viewModel;
+     MainViewModel viewModel;
     @Inject
     TaskRepository taskRepository;
-    final static int VISIBLE_THRESHOLD=1;
-    int totalItemCount,lastVisibleItem,pageNumber=1;
+    int totalItemCount,lastVisibleItem;
     GridLayoutManager layoutManager;
     boolean loading=false;
-    PublishProcessor<Integer> publishProcessor;
+    public static boolean isMoreItemLoaded=false;
+    public static ItemAdapter adapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater(  ));
         View view = binding.getRoot();
         setContentView(view);
-
-        publishProcessor=PublishProcessor.create();
         binding.pbItems.setVisibility(View.VISIBLE);
-        viewModel=new ViewModelProvider(this, new MyViewModelFactory(this.getApplication(),taskRepository)).get(MainViewModel.class);
+        viewModel=new ViewModelProvider
+                (this, new MyViewModelFactory(this.getApplication(),taskRepository)).get(MainViewModel.class);
         viewModel.getItems().observe(this, new Observer<List<TaskResponseItem>>() {
             @Override
             public void onChanged(List<TaskResponseItem> taskResponseItems) {
-                setupRecyclerview(taskResponseItems);
+                if(isMoreItemLoaded)
+                {
+                    adapter.notifyDataSetChanged();
+                }else
+                {
+                    adapter= new ItemAdapter(MainActivity.this,taskResponseItems);
+                    setupRecyclerview(taskResponseItems);
+                }
+
                 loading=false;
                 binding.pbItems.setVisibility(View.GONE);
                 if (binding.refresher.isRefreshing()) {
@@ -70,21 +80,41 @@ public class MainActivity extends AppCompatActivity {
                 super.onScrolled(recyclerView, dx, dy);
                 totalItemCount = layoutManager.getItemCount();
                 lastVisibleItem  = layoutManager.findLastVisibleItemPosition();
-                if (!loading && totalItemCount<=(lastVisibleItem+VISIBLE_THRESHOLD))
+                if (totalItemCount<=lastVisibleItem + 2)
                 {
-                    pageNumber++;
-                    publishProcessor.onNext(pageNumber);
+//                    MainViewModel.pageNumber++;
+                    if (MainViewModel.pageNumber>=4)
+                    {
+                        return;
+                    }
+                    binding.pbItems.setVisibility(View.VISIBLE);
                     loading=true;
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Your Code
+                            viewModel.getItems();
+                            isMoreItemLoaded=true;
+
+                        }
+                    }, 1000);
+
                 }
+
+                Log.i("last", "onScrolled: " + lastVisibleItem);
+                Log.i("total", "onScrolled: " + totalItemCount);
+
+
             }
         });
-        publishProcessor.onNext(pageNumber);
     }
 
     private void setupRecyclerview(List<TaskResponseItem> taskResponseItems) {
+
         layoutManager = new GridLayoutManager(this,2);
         binding.recyclerviewItems.setLayoutManager(layoutManager);
         binding.recyclerviewItems.setHasFixedSize(true);
-        binding.recyclerviewItems.setAdapter(new ItemAdapter(this,taskResponseItems));
+        binding.recyclerviewItems.setAdapter(adapter);
     }
+
 }

@@ -48,6 +48,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
             @Override
             public void onClick(View view) {
                 Intent intentDetails = new Intent(context, DetailsActivity.class);
+                String guid = items.get(position).getGuid();
                 String name = items.get(position).getName();
                 String date = String.valueOf(items.get(position).getUpdatedDate());
                 String country = items.get(position).getCountry();
@@ -55,12 +56,14 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ItemViewHolder
                 String imageUrl = items.get(position).getLandscape();
                 boolean isLike = items.get(position).getLikeStatus();
                 Bundle bundle = new Bundle();
+                bundle.putString("guid",guid);
                 bundle.putString("name",name);
                 bundle.putString("date",date);
                 bundle.putString("country",country);
                 bundle.putString("description",description);
                 bundle.putString("imageUrl",imageUrl);
                 bundle.putBoolean("isLike",isLike);
+                bundle.putInt("pos",position);
                 intentDetails.putExtras(bundle);
                 context.startActivity(intentDetails);
             }

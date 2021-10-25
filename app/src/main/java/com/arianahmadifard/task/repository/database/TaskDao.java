@@ -26,4 +26,7 @@ public interface TaskDao {
 
     @Query("Delete FROM TASK")
     void deleteAll();
+
+    @Query("UPDATE Task SET likeStatus=:likeState Where guid=:id")
+    void update(boolean likeState,String id);
 }
